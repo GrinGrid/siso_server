@@ -1,0 +1,90 @@
+var express = require('express');
+var router = express.Router();
+
+var authController = require('../controllers/controller_auth.js');
+var userController = require('../controllers/controller_user.js');
+var custMsg = require( '../models/custom_msg' );
+
+module.exports = function(passport){
+
+	//Log in
+	router.post('/login', function(req, res, next) {
+		userController.loginUser(req, res, passport, next);
+	});
+
+	//Log out
+	router.get('/logout', authController.isAuthenticated, function(req, res){
+		userController.getUsers(req, res);
+	});
+
+	//Sign up
+	router.post('/', function(req, res, next) {
+		userController.signupUser(req, res, passport, next);
+	});
+
+	// Check if the same email exists
+	router.get('/checkUser/:email', function(req, res){
+		userController.checkUserByEmail(req, res);
+	});
+
+	//gets all users
+	router.get('/list', authController.isAuthenticated, function(req, res){
+		userController.getUsers(req, res);
+	});
+
+	//gets specified user by email
+	router.get('/:email', authController.isAuthenticated, function(req, res){
+		userController.getUserByEmail(req, res);
+	}) 
+
+	//updates specified user by email
+	router.put('/:email', authController.isAuthenticated, function(req, res){
+		userController.updateUserByEmail(req, res);
+	})
+
+	//deletes the user by email
+	router.delete('/:email', authController.isAuthenticated, function(req, res){
+		userController.removeUserByEmail(req, res);
+	});
+
+	//Login, Logout and Signup
+	//
+/*
+	//sends successful signup state back to angular
+	router.get('/signup_success', function(req, res){
+		res.send({state: 'success', user: req.user ? req.user : null});
+	});
+
+	//sends failure signup state back to angular
+	router.get('/signup_failure', function(req, res){
+		res.send({state: 'failure', user: null, message: "Invalid username or password"});
+	});
+
+	//sends successful login state back to angular
+	router.get('/login_success', function(req, res){
+		res.send({state: 'success', user: req.user ? req.user : null});
+	});
+
+	//sends failure login state back to angular
+	router.get('/login_failure', function(req, res){
+		res.send({state: 'failure', user: null, message: "Invalid username or password"});
+	});
+
+	//log in
+	router.post('/login', passport.authenticate('login', {
+		session: false,
+		successRedirect: '/auth/login_success',
+		failureRedirect: '/auth/login_failure'
+	}));
+
+	//sign up
+	router.post('/signup', passport.authenticate('signup', {
+		session: false,
+		successRedirect: '/auth/signup_success',
+		failureRedirect: '/auth/signup_failure'
+	}));
+*/
+
+
+        return router;
+}

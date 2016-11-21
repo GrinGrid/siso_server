@@ -1,0 +1,9 @@
+
+logs
+data
+src_backup
+node_module
+public/images/prf
+*.tar
+src_backup
+
