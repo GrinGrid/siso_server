@@ -2,7 +2,7 @@
 logs
 data
 src_backup
-node_module
+node_modules
 public/images/prf
 *.tar
 src_backup
