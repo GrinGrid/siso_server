@@ -204,7 +204,7 @@ var makeUserList = function(listGubun, req, res, user, users, result, favorites)
 	}
 
 	// Sort before sending list to the client
-	return res.status(200).json(sortList(userList, sortGubun, 100));
+	return res.status(200).json({group_first:sortList(userList, sortGubun, 100)});
 };
 
 

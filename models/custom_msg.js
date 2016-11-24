@@ -17,6 +17,7 @@ custMsgs.push({msgId:"SMS_TIMEOUT",	msg: { msgCode:"ERR031", msgText:"SMS 인증
 custMsgs.push({msgId:"SMS_ERROR",	msg: { msgCode:"ERR032", msgText:"SMS 인증번호가 올바르지 않습니다."}});
 
 custMsgs.push({msgId:"NO_FAVORITE",	msg: { msgCode:"ERR040", msgText:"등록된 내역이 없습니다."}});
+custMsgs.push({msgId:"CONTACT_EXIST",	msg: { msgCode:"ERR041", msgText:"이미 연락처 요청된 사용자입니다."}});
 
 // System Error which starts with 2XX
 custMsgs.push({msgId:"SYS_ERROR",	msg: { msgCode:"ERR201", msgText:"시스템 오류가 발생하였습니다."}});

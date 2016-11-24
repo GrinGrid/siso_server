@@ -219,7 +219,7 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 		} else {
                         for (var i=0; i<favorites.length; i++) {
                         	favoriteList.push(favorites[i].favorite_email);
-				logger.info('favorite_email['+favorites[i].favorite_email+"]");
+//				logger.info('favorite_email['+favorites[i].favorite_email+"]");
 			}
 		}
 
@@ -227,10 +227,10 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 
 		// 대상에 대한 매칭 작업
 		for (var i=0;i<users.length;i++) {
-
+/*
 			logger.info("user["+users[i].personal_info.email+"]");
 			logger.info("user["+users[i].sitter_info.commute_type+"]");
-
+*/
 			targetCnt=0.0;
 			matchCnt=0.0;
 

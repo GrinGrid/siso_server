@@ -22,6 +22,10 @@ router.get('/list/:email/sort/:sort', authController.isAuthenticated, function(r
 		matchController.getListByParentEmail(req, res);
 	});
 
+router.get('/favList/:email', authController.isAuthenticated, function(req, res){
+		listController.getFavoriteListByParentEmail(req, res);
+	});
+
 router.get('/favList/:email/sort/:sort', authController.isAuthenticated, function(req, res){
 		listController.getFavoriteListByParentEmail(req, res);
 	});

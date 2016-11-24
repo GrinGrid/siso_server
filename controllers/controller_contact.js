@@ -38,8 +38,8 @@ exports.requestContact = function(req, res){
 		}
 		//already exists
 		if (contact) {
-			logger.error('Contact request already exists...: '+req.body.email);
-	                return res.status(500).json(custMsg.getMsg("ID_EXIST"));
+			logger.error('Contact request already exists...: '+req.body.req_email);
+	                return res.status(500).json(custMsg.getMsg("CONTACT_EXIST"));
 		} else {
 			var newContact = new Contact();
 	
@@ -63,7 +63,25 @@ exports.requestContact = function(req, res){
 				}
 
 				logger.info(newContact.req_email + ' requested contact succesfully...');
-				return res.status(200).json({msg:"Success"});
+
+
+			        var query = User.findOne({"personal_info.email":req.body.rcv_email}, function(err, user){
+			                if(err) {
+			                        logger.error(err);
+						return res.status(200).json({msg:"Success"});
+			                } else if(user==null) {
+			                        logger.error("There is no user for : " + rcv_email);
+						return res.status(200).json({msg:"Success"});
+			                } else {
+			                        logger.error("Send push to user : " + user.personal_info.email);
+
+						sendPush(user.personal_info.push_id, "푸쉬 테스트", function(err){
+
+							return res.status(200).json({msg:"Success"});
+						});
+					}
+
+			        });
 
 			});
 
@@ -176,4 +194,50 @@ exports.removeContact = function(req, res){
 			});
 		});
 	});
+};
+
+
+var sendPush = function(pushid, msg, callback){
+
+        var FCM = require('fcm').FCM;
+
+        var apiKey = "AIzaSyANZVFB2BhmFMM96FxPQXvmhmAyv2npzjQ";
+        var fcm = new FCM(apiKey);
+
+        var message = {
+		"to" : pushid,
+		"priority" : "normal",
+		"notification" : {
+		"body" : "Contact request received...",
+		"title" : "SISO Noti",
+//		"icon" : "new",
+		},
+		"data" : {
+			"msg" : msg
+		}
+/*
+                    registration_id: pushid, // required
+//                    collapse_key: 'Collapse key',
+                    data1: msg,
+                    data2: msg+"2"
+*/
+        };
+
+	logger.info('PUSH ID ['+pushid+"]");
+	logger.info('PUSH MSG ['+msg+"]");
+
+	return callback("err");
+
+        fcm.send(message, function(err, messageId){
+                if (err) {
+                        logger.info("Something has gone wrong!");
+                } else {
+                        logger.info("Sent with message ID: ", messageId);
+                }
+
+		logger.info('PUSH DATA ['+message+"]");
+
+//		return callback("err");
+        });
+
 };
