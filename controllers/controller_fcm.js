@@ -8,16 +8,19 @@ var logger = require('../lib/wlogger');
 
 exports.sendPush = function(req, res){
 
+	var pushId = req.body.push_id;
+	var message = req.body.message;
+
 	var FCM = require('fcm').FCM;
 
-	var apiKey = '프로젝트가 같다면 기존 GCM API 코드 쓰면 됨';
+	var apiKey = 'AIzaSyANZVFB2BhmFMM96FxPQXvmhmAyv2npzjQ';
 	var fcm = new FCM(apiKey);
 
 	var message = {
-		    registration_id: '단말기 토큰값', // required
-		    collapse_key: 'Collapse key',
-		    data1: 'this is data1 war !',
-		    data2: 'this is data2 war !'
+		to: pushId,
+		data: {
+			message: message
+		}
 	};
 
 	fcm.send(message, function(err, messageId){

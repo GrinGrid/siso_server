@@ -3,24 +3,17 @@ var redis = require( 'redis' );
 var custMsg = require( '../models/custom_msg' );
 var logger = require( '../lib/wlogger' );
 
-//Used for routes that must be authenticated.
-exports.isAuthenticated = function (req, res, next) {
-// if user is authenticated in the session, call the next() to call the next request handler 
-// Passport adds this method to request object. A middleware is allowed to add properties to
-// request and response objects
+exports.checkSession = function (req, res) {
 	
-	logger.info('API Authentication - start');
+	logger.info('Session check - start');
 
 	var headers = req.headers;
 	var session_hash = headers['session-key'];
 
-	logger.info('API Authentication - session_hash : ' + session_hash);
-
-return next();
-
+	logger.info('Session check - session_hash : ' + session_hash);
 
 	if ( session_hash == undefined || session_hash == null || session_hash == "" ) {
-		logger.error('API Authentication - error : no session value');
+		logger.error('Session check - error : no session value');
 		// if the user is not authenticated then redirect him to the login page
 	        return res.status(500).send(custMsg.getMsg("NO_SESSION"));
 		//return res.redirect('/#login');
@@ -41,17 +34,15 @@ return next();
 			}
 
 			if ( value == null || value == "" ) {
-				logger.error('API Authentication - error : no matching session value');
-	       			return res.status(500).send(custMsg.getMsg("INVALID_SESSION"));
+				logger.error('Session check - no matching session value');
+				redisc.quit();
+	       			return res.status(200).json({result:"NONE"});
+			} else {
+				logger.error('Session check - Session expriation has been extended for user ['+value+']');
+				redisc.expire(session_hash, 86400); // Key expires after 24 hours
+				redisc.quit();
+	       			return res.status(200).json({result:"RENEWAL"});
 			}
-
-			EMAIL = value;
-			logger.info("email : " + value);
-			logger.info('API Authentication - finish');
-
-			redisc.quit();
-
-			return next();
 		});
 	}
 }

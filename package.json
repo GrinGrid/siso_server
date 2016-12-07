@@ -13,7 +13,7 @@
     "debug": "~2.2.0",
     "express": "~4.13.1",
     "express-session": "^1.14.0",
-    "fcm": "^1.0.3",
+    "fcm-node": "^1.0.16",
     "georedis": "^3.0.3",
     "jade": "~1.11.0",
     "mongoose": "^4.5.8",

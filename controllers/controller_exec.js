@@ -40,7 +40,7 @@ exports.putGeoDataForAllUsers = function(req, res){
 
 			if ( users[i].personal_info.user_type == 1 && users[i].sitter_info.commute_type != undefined) {	// Adding to sitters
 //				logger.info('adding sitter :'+users[i].personal_info.email+', '+users[i].personal_info.lat+', '+users[i].personal_info.lng+', '+users[i].personal_info.addr1+'....')		
-				if ( users[i].sitter_info.commute_type == 2 ) {	// 입주형
+				if ( users[i].sitter_info.commute_type == 1 ) {	// 입주형
 					sitters_resident.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
 						if(err) logger.error(err)
 						else logger.info('Sitter resident added :', reply)
@@ -55,7 +55,7 @@ exports.putGeoDataForAllUsers = function(req, res){
 			} else if ( users[i].personal_info.user_type == 0 && users[i].parent_info.commute_type != undefined) {	// Adding to sitters
 //			} else {				// Adding to parents
 //				logger.info('adding parent :'+users[i].personal_info.email+', '+users[i].personal_info.lat+', '+users[i].personal_info.lng+', '+users[i].personal_info.addr1+'....')
-				if ( users[i].parent_info.commute_type == 2 ) {	// 입주형
+				if ( users[i].parent_info.commute_type == 1 ) {	// 입주형
 					parents_resident.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
 						if(err) logger.error(err)
 						else logger.info('Parent resident added :', reply)
@@ -89,7 +89,7 @@ exports.insertRandomUsers = function(req, res){
 
 	logger.info('[User Registration]');  
 
-	var maxCnt = 5100;
+	var maxCnt = 5200;
 /*
 	var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
 
@@ -103,7 +103,8 @@ exports.insertRandomUsers = function(req, res){
 	var sitters = geo.addSet('sitters')
 */
 
-var work_table = ["1111111","0111100","0111100","01111100","0111110","0011110","0000110"];
+//var work_table = ["1111111","0111100","0111100","01111100","0111110","0011110","0000110"];
+var work_table = ["1111111","0111100","0111100","0111110","0111110","0111110","0111110"];
 var brief_table = ["난 잘나가는 시터!!","안녕하세요~~","아이들을 정말 사랑해요","신난다 시터에요","잘 부탁부탁드립니다","우헤헤헤 신나요","진정한 시터를 찾으신다면~~"];
 var intro_table = ["난 잘나가는 시터!!","안녕하세요~~","아이들을 정말 사랑해요","신난다 시터에요","잘 부탁부탁드립니다","우헤헤헤 신나요","진정한 시터를 찾으신다면~~"];
 
@@ -149,7 +150,7 @@ var intro_table = ["난 잘나가는 시터!!","안녕하세요~~","아이들을
 		newUser.sitter_info.term_from = 0;
 		newUser.sitter_info.term_to = 0;
 		newUser.sitter_info.skill = "";
-		newUser.sitter_info.commute_type = "2";
+		newUser.sitter_info.commute_type = 1;
 		newUser.sitter_info.distance_limit = 72;
 //0111110
 		newUser.sitter_info.mon = work_table[Math.floor(Math.random()*7)];
@@ -169,7 +170,8 @@ var intro_table = ["난 잘나가는 시터!!","안녕하세요~~","아이들을
 //15000 : 15,000원
 //1500000 : 150만원
 //2300000 : 230만원
-		newUser.sitter_info.salary = 6000 + Math.floor(Math.random()*9)*1000;
+//		newUser.sitter_info.salary = 6000 + Math.floor(Math.random()*9)*1000;
+		newUser.sitter_info.salary = 1500000 + Math.floor(Math.random()*8)*100000;
 		newUser.sitter_info.env_pet = 0;
 		newUser.sitter_info.env_cctv = 0;
 		newUser.sitter_info.evn_adult = 0;

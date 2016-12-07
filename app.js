@@ -56,7 +56,8 @@ var _favorite = require('./routes/favorite');			// contact list or detail
 var _sms = require('./routes/sms');				// handles sms verification
 var _img = require('./routes/img');				// img uploading
 var _exec = require('./routes/exec');				// system job like batch from outside
-var _config = require('./routes/config');				// config file management 
+var _config = require('./routes/config');			// config file management 
+var _session = require('./routes/session');			// session management 
 
 var mongoose = require('mongoose');				//add for Mongo support
 mongoose.connect('mongodb://localhost/siso');			//connect to Mongo
@@ -106,6 +107,7 @@ app.use('/sms', _sms);
 app.use('/img', _img);
 app.use('/exec', _exec);
 app.use('/config', _config);
+app.use('/session', _session);
 
 //// Initialize Passport
 var initPassport = require('./passport-init');

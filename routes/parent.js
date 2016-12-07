@@ -3,6 +3,7 @@ var router = express.Router();
 
 var authController = require('../controllers/controller_auth.js');
 var matchController = require('../controllers/controller_match.js');
+var listController = require('../controllers/controller_list.js');
 
 // Routing starts....
 
@@ -18,6 +19,18 @@ router.get('/list/:email', authController.isAuthenticated, function(req, res){
 
 router.get('/list/:email/sort/:sort', authController.isAuthenticated, function(req, res){
 		matchController.getListBySitterEmail(req, res);
+	});
+
+router.get('/favList/:email/sort/:sort', authController.isAuthenticated, function(req, res){
+		listController.getFavoriteListBySitterEmail(req, res);
+	});
+
+router.get('/reqList/:email/sort/:sort', authController.isAuthenticated, function(req, res){
+		listController.getReqListBySitterEmail(req, res);
+	});
+
+router.get('/rcvList/:email/sort/:sort', authController.isAuthenticated, function(req, res){
+		listController.getRcvListBySitterEmail(req, res);
 	});
 
 router.get('/count/:email', authController.isAuthenticated, function(req, res){

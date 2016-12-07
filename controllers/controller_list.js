@@ -18,6 +18,18 @@ exports.getRcvListByParentEmail = function(req, res){
         getListByEmail("rcv", req, res);
 }
 
+exports.getFavoriteListBySitterEmail = function(req, res){
+        getListByEmail("fav", req, res);
+}
+
+exports.getReqListBySitterEmail = function(req, res){
+        getListByEmail("req", req, res);
+}
+
+exports.getRcvListBySitterEmail = function(req, res){
+        getListByEmail("rcv", req, res);
+}
+
 getListByEmail = function(listGubun, req, res){
 
 	logger.info('Search List...');
@@ -122,7 +134,7 @@ getListByEmail = function(listGubun, req, res){
 var makeUserList = function(listGubun, req, res, user, users, result, favorites) {
 
 	var gubunTable = ["parent","sitter","parent"];
-	var commuteTable = ["resident","commute","resident","commute"];
+	var commuteTable = ["commute","resident","commute","resident","commute"];
 
 	var gubun = user.personal_info.user_type;
 
@@ -149,13 +161,15 @@ var makeUserList = function(listGubun, req, res, user, users, result, favorites)
 		var currentUser = {
 			email:users[i].personal_info.email,
 			name:users[i].personal_info.name,
-			img:users[i].image_info.prt_img_url,
-			img:"http://siso4u.net/images/prf/kyaku76@gmail.com.JPG",
+                        img:(users[i].image_info.prf_img_url==undefined)?
+                        	"http://siso4u.net/images/prf/nisclan1480031777958@hotmail.com.jpg":
+                        	users[i].image_info.prf_img_url,
 			age:0,
 			brief:eval("users[i]."+searchGubunStr+"_info.brief"),
 			addr:users[i].personal_info.addr1,
 			salary:eval("users[i]."+searchGubunStr+"_info.salary"),
 			commute:eval("users[i]."+searchGubunStr+"_info.commute_type"),
+			children:eval("users[i]."+searchGubunStr+"_info.children_info"),
 			testimonialCnt:users[i].personal_info.testimonial_count,
 			favorite:"N",
 			contactStatus:9,

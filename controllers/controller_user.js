@@ -175,7 +175,7 @@ exports.logoutUser = function(req, res){
 			return res.status(200).send({msg:"Logged out successfully..."});
 		} else {
 //			var username = obj.email;
-	       	 	redisc.expire(session_hash, 0); // Key expires after 24 hours
+	       	 	redisc.expire(session_hash, 0); // Key expires right now
 			logger.info('Logout success : ' + username + " has logged out...");
 			return res.status(200).send({msg:"Logged out successfully..."});
 		}

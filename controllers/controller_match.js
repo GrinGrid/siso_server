@@ -11,7 +11,7 @@ var logger = require('../lib/wlogger');
 //////////////////////////////////////////////////
 
 // REDIS 검색시 기본 거리값(km)
-var baseDistance = 3;
+var baseDistance = 30;
 // REDIS 검색시 기본 검색결과 갯수값
 var baseRedisCnt = 300;
 
@@ -30,11 +30,11 @@ var salTable_sitter_commute_resident = [-10000,-5000,-2000,0,1000,2000,3000,5000
 var salValue_sitter_commute_resident = [10,        9,    8,7,   6,   5,   4,   3,   2,    1];
 var rate_sitter_commute_resident = [7,2,1];
 // 3.    [입주]   =>   [입주]
-var distTable_sitter_resident_resident = [0, 0.5, 2, 5, 10, 15, 20, 30];
-var distValue_sitter_resident_resident = [10,9.5, 9, 8,6.5,  5,  3,  1];	
-var salTable_sitter_resident_resident = [-10000,-5000,-2000,0,1000,2000,3000,5000,7000,10000];	
-var salValue_sitter_resident_resident = [10,        9,    8,7,   6,   5,   4,   3,   2,    1];	
-var rate_sitter_resident_resident = [7,2,1];
+var distTable_sitter_resident_resident = [0, 500];
+var distValue_sitter_resident_resident = [10,  0];	
+var salTable_sitter_resident_resident = [-1000000,-500000,-200000,0,100000,200000,300000,500000,700000,1000000];	
+var salValue_sitter_resident_resident = [10,            9,      8,7,     6,     5,     4,     3,     2,      1];	
+var rate_sitter_resident_resident = [4,2,4];
 // 4.    [입주]   => [통근/재택] 
 var distTable_sitter_resident_commute = [0, 0.5, 2, 5, 10, 15, 20, 30];
 var distValue_sitter_resident_commute = [10,9.5, 9, 8,6.5,  5,  3,  1];
@@ -46,9 +46,9 @@ var rate_sitter_resident_commute = [7,2,1];
 // 1. [통근/재택] => [통근/재택]
 var distTable_parent_commute_commute = [0, 0.5, 2, 5, 10, 15, 20, 30];
 var distValue_parent_commute_commute = [10,9.5, 9, 8,6.5,  5,  3,  1];
-var salTable_parent_commute_commute = [-10000,-5000,-2000,0,1000,2000,3000,5000,7000,10000];
-var salValue_parent_commute_commute = [10,        9,    8,7,   6,   5,   4,   3,   2,    1];
-var rate_parent_commute_commute = [7,2,1]; // 비중도 : 1.스케쥴, 2.거리, 3.시급
+var salTable_parent_commute_commute = [-10000, 10000];
+var salValue_parent_commute_commute = [0,         10];
+var rate_parent_commute_commute = [4,4,2]; // 비중도 : 1.스케쥴, 2.거리, 3.시급
 // 2. [통근/재택] =>   [입주]
 var distTable_parent_commute_resident = [0, 0.5, 2, 5, 10, 15, 20, 30];
 var distValue_parent_commute_resident = [10,9.5, 9, 8,6.5,  5,  3,  1];
@@ -58,8 +58,8 @@ var rate_parent_commute_resident = [7,2,1];
 // 3.    [입주]   =>   [입주]
 var distTable_parent_resident_resident = [0, 0.5, 2, 5, 10, 15, 20, 30];
 var distValue_parent_resident_resident = [10,9.5, 9, 8,6.5,  5,  3,  1];	
-var salTable_parent_resident_resident = [-10000,-5000,-2000,0,1000,2000,3000,5000,7000,10000];	
-var salValue_parent_resident_resident = [10,        9,    8,7,   6,   5,   4,   3,   2,    1];	
+var salTable_parent_resident_resident = [-1000000,-500000,-200000,0,100000,200000,300000,500000,700000,1000000];	
+var salValue_parent_resident_resident = [10,            9,      8,7,     6,     5,     4,     3,     2,      1];	
 var rate_parent_resident_resident = [7,2,1];
 // 4.    [입주]   => [통근/재택] 
 var distTable_parent_resident_commute = [0, 0.5, 2, 5, 10, 15, 20, 30];
@@ -87,7 +87,7 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 	logger.info('Try to find a certain users within the given distance - start');
 
 	var gubunTable = ["parent","sitter","parent"];
-	var commuteTable = ["resident","commute","resident","commute"];
+	var commuteTable = ["commute","resident","commute","resident","commute"];
 
 	// For GPS calculation
         var redis = require('redis');                                   //add for Redis support
@@ -99,6 +99,7 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 
         var geo = require('georedis').initialize(redisc, {nativeGeo: true});
 
+	// 조회주체의 정보를 조회한다.
 	var query = User.findOne({"personal_info.email":req.params.email}, function(err, user){
                 logger.info('Try to find all users - finish');
 		if(err) {
@@ -123,23 +124,34 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 		};
 
 		var gubun = user.personal_info.user_type;
+
+		if (gubun==undefined) {
+			logger.error('No Commute type value found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
+
+		}
+
 		var sort = (req.params.sort==null)?"point":req.params.sort;
 
 		// 검색대상 회원구분값 세팅 : 시터 -> 부모 OR 부모 -> 시터
-		var myGubunStr = gubunTable[gubun];
-		var searchGubunStr = gubunTable[(gubun+1)%2];
+		var myGubunStr = gubunTable[gubun]; //조회주체 구분값 문자열
+		var searchGubunStr = gubunTable[(gubun+1)%2]; //조회대상 구분값 문자열
+
 		// 출퇴근 타입 - myCommuteStr : 내가 설정한 출퇴근 타입, searchCommuteStr : 검색할 출퇴근 타입
 		var myCommuteStr = commuteTable[eval("user."+gubunTable[gubun]+"_info.commute_type")];
 		var searchCommuteStr = (secondSearch==null)?
 					commuteTable[eval("user."+gubunTable[gubun]+"_info.commute_type")]:
 					commuteTable[(eval("user."+gubunTable[gubun]+"_info.commute_type")+1)%2];
 
+		// 레디스 조회대상 집합군 정의
 		var people = geo.addSet(searchGubunStr+"_"+searchCommuteStr);
 
 logger.info('Gubun Value : ', searchGubunStr + "_" + searchCommuteStr);
 
+		// 조회 한계거리 설정 : 출퇴근 경우는 baseDistance값을, 입주일 경우엔 한국전체를 거리로 설정
 		var distance = (searchCommuteStr=="commute")?baseDistance:1000;
 
+		// 레디스를 통한 거리내 조회대상 검색실행
 		people.nearby( { latitude: user.personal_info.lat, longitude: user.personal_info.lng}, 
 				distance, options, function(err, people){
 
@@ -165,6 +177,7 @@ logger.info('Gubun Value : ', searchGubunStr + "_" + searchCommuteStr);
 //						logger.info('people nearby:', users+"");
 						var sort = (req.params.sort==null)?"point":req.params.sort;
 
+						// 매칭 알고리즘 적용을 위한 함수 호출
 						getMatchList(user, users, listCnt, people.locationSet, myGubunStr, searchGubunStr, myCommuteStr, searchCommuteStr, sort, req, res, secondSearch, result_one);
 
 					}
@@ -186,7 +199,7 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 
 	var week = ["mon","tue","wed","thu","fri","sat","sun"];
 
-
+	// 매칭구분에 맞는 매칭테이블 값 설정
 	var scheduleRate = (eval("rate_"+searchGubunStr+"_"+myCommuteStr+"_"+searchCommuteStr))[0];
 	var distRate = (eval("rate_"+searchGubunStr+"_"+myCommuteStr+"_"+searchCommuteStr))[1];
 	var salaryRate = (eval("rate_"+searchGubunStr+"_"+myCommuteStr+"_"+searchCommuteStr))[2];
@@ -239,19 +252,21 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 				email:users[i].personal_info.email,
 				name:users[i].personal_info.name,
 				img:(users[i].image_info.prf_img_url==undefined)?
-					"http://siso4u.net/images/prf/kyaku76@gmail.com.JPG":
+					"http://siso4u.net/images/prf/nisclan1480031777958@hotmail.com.jpg":
 					users[i].image_info.prf_img_url,
 				age:0,
 				brief:eval("users[i]."+searchGubunStr+"_info.brief"),
 				addr:users[i].personal_info.addr1,
-				salary:eval("users[i]."+searchGubunStr+"_info.salary"),
 				commute:eval("users[i]."+searchGubunStr+"_info.commute_type"),
+				children:eval("users[i]."+searchGubunStr+"_info.children_info"),
 				testimonialCnt:users[i].personal_info.testimonial_count,
 				favorite:"N",
 				contactStatus:9,
 				distance:0,
 				distPoint:0,
 				timeMatch:0,
+				salary:eval("users[i]."+searchGubunStr+"_info.salary"),
+				salaryPoint:0,
 				point:0
 			};
 /*
@@ -331,15 +346,26 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 //              3. 급여 점수 판정                           //
 //////////////////////////////////////////////////////////////
 
+			logger.info("salary["+ eval("user."+myGubunStr+"_info.salary")+"]");
 			// 둘중 하나의 시급정보가 협의일 경우 시급동일로 판단
-			if ( currentUser.salary == 0 || eval("user."+searchGubunStr+"_info.salary") == 0 ) 
+			if ( currentUser.salary == 0 || eval("user."+myGubunStr+"_info.salary") == 0 ) 
 				currentUser.point += 7 * salaryRate;
 			else {
+				var salaryGap = currentUser.salary - eval("user."+myGubunStr+"_info.salary");
+
 				for (var y=0;y<salTable.length;y++) 
-					if (currentUser.salary - eval("user."+searchGubunStr+"_info.salary") <= salTable[y]) {
-						currentUser.point += salValue[y] * salaryRate;
+					if (salaryGap < salTable[y]) {
+						currentUser.salaryPoint = salValue[y-1] - (((salaryGap-salTable[y-1])/(salTable[y]-salTable[y-1]))*(salValue[y-1]-salValue[y]));
+						currentUser.point += currentUser.salaryPoint * salaryRate;
 						break;
 					}
+/*
+					if (salaryGap < salTable[y]) {
+						currentUser.salaryPoint = salValue[y-1] - (((salaryGap-salTable[y-1])/(salTable[y]-salTable[y-1]))*(salValue[y-1]-salValue[y]));
+						currentUser.point += currentUser.salaryPoint * salaryRate;
+						break;
+					}
+*/
 			}
 
 //////////////////////////////////////////////////////////////
