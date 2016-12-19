@@ -1,6 +1,5 @@
 var mongoose = require( 'mongoose' );
 var User = mongoose.model('User');
-var User_Status = mongoose.model('User_Status');
 var User_History = mongoose.model('User_History');
 var Contact = mongoose.model('Contact');
 var Favorite = mongoose.model('Favorite');
@@ -79,7 +78,6 @@ exports.signupUser = function(req, res, passport, next){
 
 				logger.info(newUser.personal_info.email + ' Registration succesful');
 
-/*
 				var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
 
 				redisc.on('error', function(err) {
@@ -109,13 +107,12 @@ exports.signupUser = function(req, res, passport, next){
 					});
 
 //				redisc.quit();
-*/
 
 				req.body.email = org_email;
 				req.body.passwd = org_passwd;
 
-				return login("first", req, res, passport, next);
-//				return done(null, newUser);
+				return login(req, res, passport, next);
+//						return done(null, newUser);
 			});
 
 		}
@@ -142,13 +139,7 @@ exports.signupUser = function(req, res, passport, next){
 
 exports.loginUser = function(req, res, passport, next){
 
-	return login("first", req, res, passport, next);
-
-};
-
-exports.reloginUser = function(req, res, passport, next){
-
-	return login("relogin", req, res, passport, next);
+	return login(req, res, passport, next);
 
 };
 
@@ -162,7 +153,7 @@ exports.logoutUser = function(req, res){
         redisc.on('error', function(err) {
 		logger.error("Error occured while processing logout...");
                 logger.error(err);
-		return res.status(200).json({msg:"Logged out successfully..."});
+		return res.status(200).send({msg:"Logged out successfully..."});
         });
 
         var headers = req.headers;
@@ -172,183 +163,27 @@ exports.logoutUser = function(req, res){
 
 	if(session_hash==undefined || session_hash==null) {
 		logger.error("No session info for " + username);
-		return res.status(200).json({msg:"Logged out successfully..."});
+		return res.status(200).send({msg:"Logged out successfully..."});
 	}
 
 	redisc.hgetall(session_hash, function (err, obj) {
 		if (err) {
 			logger.error("Error occured while processing logout...");
 			logger.error(err);
-			return res.status(200).json({msg:"Logged out successfully..."});
+			return res.status(200).send({msg:"Logged out successfully..."});
 		} else if(obj==undefined || obj==null) {
 			logger.error("No hash value matches " + username);
-			return res.status(200).json({msg:"Logged out successfully..."});
+			return res.status(200).send({msg:"Logged out successfully..."});
 		} else {
 //			var username = obj.email;
 	       	 	redisc.expire(session_hash, 0); // Key expires right now
 			logger.info('Logout success : ' + username + " has logged out...");
-			return res.status(200).json({msg:"Logged out successfully..."});
+			return res.status(200).send({msg:"Logged out successfully..."});
 		}
 	});
 
         //redisc.quit();
 }
-
-exports.updateUserStatus = function(req, res){
-
-	var email = req.body.email;
-	var action_type = req.body.action_type;
-	var status_code = "";
-
-	if (action_type==00)
-		status_code = "10";
-	else if (action_type==01)
-		status_code = "11";
-	else if (action_type==03)
-		status_code = "12";
-	else if (action_type==00||action_type==02||action_type==06)
-		status_code = "20";
-	else if (action_type==04)
-		status_code = "30";
-	else if (action_type==05)
-		status_code = "31";
-	else if (action_type==07)
-		status_code = "32";
-
-	logger.info('Updating user stauts : ' + JSON.stringify(req.body) + "");
-	logger.info('Updating user stauts : ' + email);
-
-	var query = User.findOne({"personal_info.email":email}, function(err, user){
-		if(err) {
-                	logger.error(err);
-                        return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
-		} else if(user==null) {
-			logger.error("No data found....");
-                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
-		}
-
-                logger.info("[PERSONAL INFO]"+user.personal_info);
-
-		var userStatus = new User_Status();
-
-		userStatus.email = email;
-		userStatus.action_type = action_type;
-		userStatus.content = req.body.content;
-		userStatus.reg_date = "";
-		userStatus.sys_reg_date = Date.now();
-
-		userStatus.save(function(err, user){
-			if (err) {
-	                	logger.error(err);
-	                        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
-			} 
-
-			logger.info('User information copied for backup successfully : ' + email);
-
-			var query = User.findOneAndUpdate({"personal_info.email":email}, {$set:{"personal_info.stauts":status_code}}, {upsert:false, new:true}, function(err, updatedUser){
-				if(err) {
-		                	logger.error(err);
-		                        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
-				} else if(updatedUser==null) {
-					logger.error("No data found....");
-		                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
-				}
-
-/*
-03				12	승인대기-풀만기					시터		제거
-00,02,06	APP/Admin	20	활동중			활동중			부모/시터	추가
-04		APP		30	정지-구인구직완료	정지-구인구직완료	부모/시터	제거
-05		APP		31	정지-개인사정		정지-개인사정		부모/시터 	제거
-07		Admin		32	정지-관리자		정지-관리자		부모/시터 	제거
-*/
-
-/*
-				if (action_type==
-
-
-
-
-	// For GPS calculation
-	var redis = require('redis');                                   //add for Redis support
-	var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
-
-	redisc.on('error', function(err) {
-		logger.error('Error ' + err);
-	});
-
-	var geo = require('georedis').initialize(redisc, {nativeGeo: true});
-
-	geo.deleteSet('parent_commute');
-	geo.deleteSet('parent_resident');
-	geo.deleteSet('sitter_commute');
-	geo.deleteSet('sitter_resident');
-
-	var parents_commute = geo.addSet('parent_commute')
-	var parents_resident = geo.addSet('parent_resident')
-	var sitters_commute = geo.addSet('sitter_commute')
-	var sitters_resident = geo.addSet('sitter_resident')
-
-	var query = User.find(function(err, users){
-                if(err){
-                        return res.send(500, err);
-                }
-
-		for (var i=0;i<users.length;i++) {
-
-
-			if ( users[i].personal_info.user_type == 1 && users[i].sitter_info.commute_type != undefined) {	// Adding to sitters
-//				logger.info('adding sitter :'+users[i].personal_info.email+', '+users[i].personal_info.lat+', '+users[i].personal_info.lng+', '+users[i].personal_info.addr1+'....')		
-				if ( users[i].sitter_info.commute_type == 1 ) {	// 입주형
-					sitters_resident.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
-						if(err) logger.error(err)
-						else logger.info('Sitter resident added :', reply)
-					})			
-				} else {					// 출퇴근 또는 재택형
-					sitters_commute.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
-						if(err) logger.error(err)
-						else logger.info('Sitter commute added :', reply)
-					})			
-
-				}
-			} else if ( users[i].personal_info.user_type == 0 && users[i].parent_info.commute_type != undefined) {	// Adding to sitters
-//			} else {				// Adding to parents
-//				logger.info('adding parent :'+users[i].personal_info.email+', '+users[i].personal_info.lat+', '+users[i].personal_info.lng+', '+users[i].personal_info.addr1+'....')
-				if ( users[i].parent_info.commute_type == 1 ) {	// 입주형
-					parents_resident.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
-						if(err) logger.error(err)
-						else logger.info('Parent resident added :', reply)
-					})			
-				} else {					// 출퇴근 또는 재택형
-					parents_commute.addLocation( users[i].personal_info.email, {latitude: users[i].personal_info.lat, longitude: users[i].personal_info.lng}, function(err, reply){
-						if(err) logger.error(err)
-						else logger.info('Parent commute added :', reply)
-					})			
-
-				}
-			}
-		}
-
-		return res.send(200, "SUCCESS");
-	});
-*/
-
-
-
-
-
-
-				updatedUser = setDateInfo(updatedUser);
-
-		                logger.info("[UPDATE DATA]"+updatedUser);
-
-				logger.info('User information updated successfully : ' + email);
-			        //res.status(200).json({msg:"updated successfully..."});
-			        return res.status(200).json(updatedUser);
-			});
-		});
-	});
-
-};
 
 exports.getUsers = function(req, res){
 
@@ -837,10 +672,7 @@ var getUserDetailByEmail = function(req, res){
 	});
 };
 
-var login = function(gubun, req, res, passport, next) {
-
-	if(gubun=="relogin")
-		req.body.passwd = "RELOGIN"+req.body.passwd;
+var login = function(req, res, passport, next) {
 
 	passport.authenticate('login', { session: false }, function(err, user, info) {
 		if (err) {

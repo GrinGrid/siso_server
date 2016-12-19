@@ -54,6 +54,7 @@ var _memo = require('./routes/memo');				// memo list or detail
 var _contact = require('./routes/contact');			// contact list or detail
 var _favorite = require('./routes/favorite');			// contact list or detail
 var _sms = require('./routes/sms');				// handles sms verification
+var _push = require('./routes/push');				// handles push
 var _img = require('./routes/img');				// img uploading
 var _exec = require('./routes/exec');				// system job like batch from outside
 var _config = require('./routes/config');			// config file management 
@@ -63,7 +64,7 @@ var mongoose = require('mongoose');				//add for Mongo support
 mongoose.connect('mongodb://localhost/siso');			//connect to Mongo
 
 
-var EMAIL; //the email address of the user, you can user this value only after authentication from sesstion
+var EMAIL="DUMMY"; //the email address of the user, you can user this value only after authentication from sesstion
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -104,6 +105,7 @@ app.use('/memo', _memo);
 app.use('/contact', _contact);
 app.use('/favorite', _favorite);
 app.use('/sms', _sms);
+app.use('/push', _push);
 app.use('/img', _img);
 app.use('/exec', _exec);
 app.use('/config', _config);

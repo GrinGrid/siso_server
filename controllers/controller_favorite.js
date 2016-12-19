@@ -66,9 +66,9 @@ exports.addFavorite = function(req, res){
 exports.removeFavorite = function(req, res){
 
 	logger.info('[Favorite remove]');  
-	logger.info(JSON.stringify(req.body));  
+//	logger.info(JSON.stringify(req.body));  
 
-	Favorite.findOne({'email': req.body.email, 'favorite_email': req.body.favorite_email }, function(err, favorite) {
+	Favorite.findOne({'email': req.params.email, 'favorite_email': req.params.fav_email }, function(err, favorite) {
 
 		if(err) {
                 	logger.error(err);
@@ -80,7 +80,7 @@ exports.removeFavorite = function(req, res){
 
                 logger.info("[CONTACT INFO]"+favorite);
 
-		var query = Favorite.remove({'email': req.body.email, 'favorite_email': req.body.favorite_email}, function(err) {
+		var query = Favorite.remove({'email': req.params.email, 'favorite_email': req.params.fav_email}, function(err) {
 
 			if (err) {
 				logger.error(err);

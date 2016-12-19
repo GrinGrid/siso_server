@@ -22,7 +22,8 @@ var userSchema = new mongoose.Schema({
 		reg_date: {type:String, default:""},
 		last_login: {type:String, default:""},
 		push_id: String,
-		testimonial_count: {type:Number, default:0}
+		testimonial_count: {type:Number, default:0},
+		status: String
 	},
 	sitter_info: {
 		gender: Number,
@@ -75,15 +76,14 @@ var userSchema = new mongoose.Schema({
 		skill: String,
 		work_exp: Number,
 		env_pet: Number,
-		envt_cctv: Number,
+		env_cctv: Number,
+		env_adult: Number,
 		nat: String,
 		edu: Number,
 		religion: String,
 		brief: String,
 		introduction: String,
 		sitter_age: Number,
-		job: String,
-		job_detail: String,
 		children_info: [{
 			name: String,
 			birth: Number,
@@ -148,6 +148,30 @@ var contactSchema = new mongoose.Schema({
 	status: Number
 });
 
+var pushSchema = new mongoose.Schema({
+	email: String,
+	sender: String,
+	type: String,
+	msg: String,
+	is_send_success: String,
+	is_read: String,
+	is_confirm: String,
+	req_date: String,
+	read_date: String,
+	confirm_date: String,
+	sys_req_date: Date,
+	sys_read_date: Date,
+	sys_confirm_date: Date
+});
+
+var userStatusSchema = new mongoose.Schema({
+	email: String,
+	action_type: String,
+	content: String,
+	reg_date: String,
+	sys_reg_date: Date
+});
+
 /*
 var postSchema = new mongoose.Schema({
     created_by: { type: mongoose.Schema.ObjectId, ref: 'User' },
@@ -167,3 +191,5 @@ mongoose.model('Memo', memoSchema);
 mongoose.model('Contact', contactSchema);
 mongoose.model('Contact_History', contactSchema);
 mongoose.model('Image_History', imgHistSchema);
+mongoose.model('Push', pushSchema);
+mongoose.model('User_Status', userStatusSchema);

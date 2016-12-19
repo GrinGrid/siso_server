@@ -94,7 +94,12 @@ module.exports = function(passport){
 };
 
 var isValidPassword = function(user, password){
-	return bCrypt.compareSync(password, user.personal_info.passwd);
+
+	// 재로그인시 암호화 된 비밀번호 그대로 비교
+	if (password.indexOf("RELOGIN")>-1)
+		return (user.personal_info.passwd==password.substring(("RELOGIN").length));
+	else
+		return bCrypt.compareSync(password, user.personal_info.passwd);
 };
 //Generates hash using bCrypt
 var createHash = function(password){

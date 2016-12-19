@@ -15,7 +15,7 @@ router.post('/', authController.isAuthenticated, function(req, res){
 		favoriteController.addFavorite(req, res);
 	}) 
 
-router.delete('/:email/:fav_email', authController.isAuthenticated, function(req, res){
+router.delete('/', authController.isAuthenticated, function(req, res){
 		favoriteController.removeFavorite(req, res);
 	}) 
 

@@ -6,6 +6,7 @@ var redis = require('redis');
 
 var custMsg = require('../models/custom_msg');
 var logger = require('../lib/wlogger');
+var push = require('../lib/push');
 
 
 exports.getContact = function(req, res){
@@ -75,9 +76,14 @@ exports.requestContact = function(req, res){
 			                } else {
 			                        logger.error("Send push to user : " + user.personal_info.email);
 
-						sendPush(user.personal_info.push_id, "Test Message...", function(err){
-
-							return res.status(200).json({msg:"Success"});
+						push.sendPush(req.body.req_email, req.body.rcv_email, 10, user.personal_info.push_id, "Test Message...", function(err){
+							if (err==null) {
+								logger.info("Push msg has been sent successfully...");
+								return res.status(200).json({msg:"Success"});
+							} else {
+								logger.error("Error received from FCM ["+err+"]");
+								return res.status(500).send(custMsg.getMsg("PUSH_ERROR"));
+							}
 						});
 					}
 
@@ -194,71 +200,4 @@ exports.removeContact = function(req, res){
 			});
 		});
 	});
-};
-
-
-var sendPush = function(pushid, msg, callback){
-
-	FCM = require('fcm-node');
-
-	var SERVER_API_KEY= "AIzaSyBEf8ByJkU4u3M_ZhfR0pnc7f3DE2zCJ9E";
-
-	var validDeviceRegistrationToken = 'c1m7I:A ... bjj4SK-'; //put a valid device token here
-
-	var fcmCli= new FCM(SERVER_API_KEY);
-/*
-var payloadOK = {
-    to: validDeviceRegistrationToken,
-    data: { //some data object (optional)
-        url: 'news',
-        foo:'fooooooooooooo',
-        bar:'bar bar bar'
-    },
-    priority: 'high',
-    content_available: true,
-    notification: { //notification object
-        title: 'HELLO', body: 'World!', sound : "default", badge: "1"
-    }
-};
-*/
-
-
-        var message = {
-		to: pushid,
-//		priority : "normal",
-//		notification : {
-//		body : "Contact request received...",
-//		title : "SISO Noti",
-//		icon : "new",
-//		},
-		data: {
-			message: msg
-		}
-/*
-                    registration_id: pushid, // required
-//                    collapse_key: 'Collapse key',
-                    data1: msg,
-                    data2: msg+"2"
-*/
-        };
-
-	logger.info('PUSH ID ['+pushid+"]");
-	logger.info('PUSH MSG ['+msg+"]");
-	logger.info('PUSH DATA ['+JSON.stringify(message)+"]");
-
-//	return callback("err");
-
-        fcmCli.send(message, function(err, messageId){
-                if (err) {
-                        logger.error("Something has gone wrong!");
-                        logger.error("["+err+"]");
-                } else {
-                        logger.info("Sent with message ID: ", messageId);
-                }
-
-		logger.info('PUSH DATA ['+message+"]");
-
-		return callback("err");
-        });
-
 };

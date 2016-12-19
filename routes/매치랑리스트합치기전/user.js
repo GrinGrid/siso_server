@@ -12,11 +12,6 @@ module.exports = function(passport){
 		userController.loginUser(req, res, passport, next);
 	});
 
-	//Log in again
-	router.post('/relogin', function(req, res, next) {
-		userController.reloginUser(req, res, passport, next);
-	});
-
 	//Log out
 	router.post('/logout', function(req, res){
 		userController.logoutUser(req, res);
@@ -25,11 +20,6 @@ module.exports = function(passport){
 	//Sign up
 	router.post('/', function(req, res, next) {
 		userController.signupUser(req, res, passport, next);
-	});
-
-	//Change User status
-	router.post('/status', function(req, res) {
-		userController.updateUserStatus(req, res);
 	});
 
 	// Check if the same email exists
