@@ -1,9 +1,9 @@
 
-logs
 data
+conf
+logs
 src_backup
 node_modules
 public/images/prf
 *.tar
-src_backup
 

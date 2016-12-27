@@ -3,7 +3,7 @@ var redis = require('redis');
 var User = mongoose.model('User');
 var LocalStrategy   = require('passport-local').Strategy;
 var bCrypt = require('bcrypt-nodejs');
-var logger = require('./lib/wlogger');
+var logger = require('./lib/appLogger');
 //var userController = require('./controllers/controller_user.js');
 
 
@@ -31,7 +31,8 @@ module.exports = function(passport){
 		},
 		function(req, username, password, done) { 
 
-			logger.info('Login attempt from user : '+username);
+			logger.info(req, "############################ 로그인 시도 : "+username+" ###########################");
+//			logger.info(req, "다음 유저 이메일로 로그인 시도 : "+username);
 
 			//check in mongo if a user with username exists or not
 			User.findOne({ 'personal_info.email' :  username }, function(err, user) {
@@ -40,12 +41,12 @@ module.exports = function(passport){
 					return done(err);
 				//Username does not exist, log the error and redirect back
 				if (!user){
-					logger.error('User Not Found with username '+username);
+					logger.error(req, "해당하는 이메일로 유저가 존재하지 않습니다 : "+username);
 					return done(null, false, "ID_NOT_EXIST");                 
 				}
 				//User exists but wrong password, log the error 
 				if (!isValidPassword(user, password)){
-					logger.error('Invalid Password');
+					logger.error(req, "해당하는 이메일 계정의 비밀번호가 틀립니다 : "+username);
 					return done(null, false, "INVALID_PASS"); // redirect back to login page
 				}
 				//User and password both match, return user from done method
@@ -53,29 +54,30 @@ module.exports = function(passport){
 
 				var query = User.findOneAndUpdate({"personal_info.email":username}, {$set:{"sys_info.sysLastLogin":Date.now()}}, {upsert:false, new:true}, function(err, raw){
 					if(err) {
-						logger.error(err);
+						logger.error(req, err);
 						return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 					} else if(raw==null) {
-						logger.error("No data found....");
+						logger.error(req, "해당 이메일 없음(마지막 로그인 업데이트중 오류) : "+username);
 						return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 					}
 
-					logger.info("[LastLogin time updated...]"+raw);
+					logger.info(req, "마지막 로그인 일시 업데이트 성공 : "+username);
+//					logger.info(req, "[로그인 정보 업데이트 성공...]["+raw+"]");
 				});
 
 				var redisc = redis.createClient(6379, '127.0.0.1');	//connect to Redis
 				var prefix = "user.";
 	
 				redisc.on('error', function(err) {
-					logger.error(err);
+					logger.error(req, err);
 					return done(null, false, "SYS_ERROR"); // redirect back to login page
 				});
 	
 				var today = (new Date()).getDate();
 				var session_hash = createHash(username + today);
 				session_hash = prefix + session_hash;
-	
-				logger.info('session_hash ' + session_hash);
+
+				logger.info(req, "세션값 생성 : 유저["+username+"] 세션값["+session_hash+"]");
 	
 				redisc.hmset(session_hash, {
 					"email" : username,
@@ -85,7 +87,7 @@ module.exports = function(passport){
 				redisc.expire(session_hash, 86400); // Key expires after 24 hours
 	
 				//redisc.quit();
-				logger.info('Login success : ' + username + " has logged in...");
+				logger.info(req, "로그인 성공 : [" + username + "] 유저가 로그인 하셨습니다.");
 	
 				return done(null, user, session_hash);
 			});

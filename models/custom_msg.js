@@ -1,4 +1,4 @@
-var logger = require("../lib/wlogger");
+//var logger = require("../lib/wlogger");
 
 var custMsgs = []; // Array for error messages
 var logMsg = true;
@@ -31,7 +31,6 @@ exports.getMsg = function( msgId ) {
 	for ( var i=0 ; i<=custMsgs.length; i++ )
 		if ( custMsgs[i].msgId == msgId )
 			break;
-
-	logger.error(custMsgs[i].msg);
+//	logger.error(custMsgs[i].msg);
 	return custMsgs[i].msg;
 };

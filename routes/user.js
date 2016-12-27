@@ -28,7 +28,7 @@ module.exports = function(passport){
 	});
 
 	//Change User status
-	router.post('/status', function(req, res) {
+	router.post('/status', authController.isAuthenticated, function(req, res) {
 		userController.updateUserStatus(req, res);
 	});
 

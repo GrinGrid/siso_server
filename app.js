@@ -8,11 +8,12 @@ var session = require('express-session');
 var passport = require('passport');
 var FileStreamRotator = require('file-stream-rotator');
 var resBodyLogger = require('./lib/resBodyLogger');
+
 var app = express();
+var prefix = "";
 
 //initialize mongoose schemas
 require('./models/db_models');
-
 
 /******************************************************************************** 
  * Acces Log[Date, Request Body, Response Body etc...]
@@ -42,6 +43,8 @@ app.use(logger('=============== [:date[iso]] [:method] [:url] '+
 
 app.use(resBodyLogger(accessLogStream));
 
+//var appLogger = require('./lib/appLogger');
+//app.use(appLogger("app"));
 
 /********************************************************************************
  * Routers
@@ -63,8 +66,8 @@ var _session = require('./routes/session');			// session management
 var mongoose = require('mongoose');				//add for Mongo support
 mongoose.connect('mongodb://localhost/siso');			//connect to Mongo
 
+//var wlogger = require('./lib/wlogger');
 
-var EMAIL="DUMMY"; //the email address of the user, you can user this value only after authentication from sesstion
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -97,19 +100,19 @@ app.use(passport.session());
 /********************************************************************************
  * URL routing
  ********************************************************************************/
-app.use('/user', _user);
-app.use('/sitter', _sitter);
-app.use('/parent', _parent);
-app.use('/testimonial', _testimonial);
-app.use('/memo', _memo);
-app.use('/contact', _contact);
-app.use('/favorite', _favorite);
-app.use('/sms', _sms);
-app.use('/push', _push);
-app.use('/img', _img);
-app.use('/exec', _exec);
-app.use('/config', _config);
-app.use('/session', _session);
+app.use(prefix+'/user', _user);
+app.use(prefix+'/sitter', _sitter);
+app.use(prefix+'/parent', _parent);
+app.use(prefix+'/testimonial', _testimonial);
+app.use(prefix+'/memo', _memo);
+app.use(prefix+'/contact', _contact);
+app.use(prefix+'/favorite', _favorite);
+app.use(prefix+'/sms', _sms);
+app.use(prefix+'/push', _push);
+app.use(prefix+'/img', _img);
+app.use(prefix+'/exec', _exec);
+app.use(prefix+'/config', _config);
+app.use(prefix+'/session', _session);
 
 //// Initialize Passport
 var initPassport = require('./passport-init');

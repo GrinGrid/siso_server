@@ -15,6 +15,10 @@ router.post('/', authController.isAuthenticated, function(req, res){
 		contactController.requestContact(req, res);
 	}) 
 
+router.post('/cancel', authController.isAuthenticated, function(req, res){
+		contactController.cancelRequestedContact(req, res);
+	}) 
+
 router.post('/accept', authController.isAuthenticated, function(req, res){
 		contactController.acceptRequestedContact(req, res);
 	}) 
