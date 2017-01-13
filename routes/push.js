@@ -7,10 +7,6 @@ var pushController = require('../controllers/controller_push.js');
 // Routing starts....
 
 //gets specified push
-router.get('/list/:email/:count', authController.isAuthenticated, function(req, res){
-		pushController.getPushListByEmail(req, res);
-	});
-
 router.get('/list/:email/:count/:key', authController.isAuthenticated, function(req, res){
 		pushController.getPushListByEmail(req, res);
 	});

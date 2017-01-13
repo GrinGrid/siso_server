@@ -1,44 +1,44 @@
 var bCrypt = require('bcrypt-nodejs');
 var redis = require( 'redis' );
 var custMsg = require( '../models/custom_msg' );
-var logger = require( '../lib/wlogger' );
+var logger = require( '../lib/appLogger' );
 
 exports.checkSession = function (req, res) {
 	
-	logger.info('Session check - start');
+	logger.info(req, "[세션정보 확인]");
 
 	var headers = req.headers;
 	var session_hash = headers['session-key'];
 
-	logger.info('Session check - session_hash : ' + session_hash);
+	logger.info(req, "세션 해쉬값 [" + session_hash + "]");
 
 	if ( session_hash == undefined || session_hash == null || session_hash == "" ) {
-		logger.error('Session check - error : no session value');
+		logger.error(req, "사용자 헤더에 세션정보가 존제하지 않습니다.");
 		// if the user is not authenticated then redirect him to the login page
-	        return res.status(500).send(custMsg.getMsg("NO_SESSION"));
+	       	return res.status(200).json({result:"NONE"});
+//	        return res.status(500).json(custMsg.getMsg("NO_SESSION"));
 		//return res.redirect('/#login');
 	} else {
-
 		var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
 
 		redisc.on('error', function(err) {
-		        logger.error('Error ' + err);
-	                return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
+		        logger.error(req, "세션정보를 위한 레디스 접근시 오류 - " + err);
+			redisc.quit();
+	                return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
 		});
 
 		redisc.hget(session_hash, "email", function(err, value) {
-			// When there is no session data in REDIS
 			if (err) {
+		        	logger.error(req, "세션정보를 위한 레디스 조회시 오류 - " + err);
 				redisc.quit();
-	                        return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
+	                        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
 			}
-
 			if ( value == null || value == "" ) {
-				logger.error('Session check - no matching session value');
+				logger.info(req, "레디스에 해당 해쉬값이 존재하지 않습니다");
 				redisc.quit();
 	       			return res.status(200).json({result:"NONE"});
 			} else {
-				logger.error('Session check - Session expriation has been extended for user ['+value+']');
+				logger.info(req, value + " 사용자의 접속정보가 연장되었습니다");
 				redisc.expire(session_hash, 86400); // Key expires after 24 hours
 				redisc.quit();
 	       			return res.status(200).json({result:"RENEWAL"});
@@ -46,8 +46,3 @@ exports.checkSession = function (req, res) {
 		});
 	}
 }
-
-//Generates hash using bCrypt
-var createHash = function(password){
-	return bCrypt.hashSync(password, bCrypt.genSaltSync(10), null);
-};

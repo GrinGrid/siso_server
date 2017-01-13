@@ -10,6 +10,12 @@ var smsController = require('../controllers/controller_sms.js');
 router.post('/', function(req, res){
 		smsController.sendSMS(req, res);
 	}) 
+
+//gets specified user
+router.get('/result/:deliveryid', function(req, res){
+		smsController.resultSMS(req, res);
+	}) 
+
 //gets specified user
 router.post('/confirm', function(req, res){
 		smsController.confirmSMS(req, res);

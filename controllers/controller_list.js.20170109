@@ -92,36 +92,30 @@ exports.getListBySitterEmail = function(req, res){
 
 getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 
-        logger.info(req, "[시터/부모 매칭 리스트 조회]");
-
-        if (req.params.email==null || req.params.email==undefined || req.params.email=="") {
-                logger.error(req, JSON.stringify(custMsg.getMsg("INVALID_INPUT")));
-                return res.status(500).json(custMsg.getMsg("INVALID_INPUT"));
-        }
+	logger.info(req, 'Try to find a certain users within the given distance - start');
 
 	// For GPS calculation
         var redis = require('redis');                                   //add for Redis support
         var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
 
         redisc.on('error', function(err) {
-                logger.error(req, "레디스 오류 - " + err);
-		redisc.quit();
-		return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+                logger.error(req, 'Error ' + err);
         });
 
         var geo = require('georedis').initialize(redisc, {nativeGeo: true});
 
 	// 조회주체의 정보를 조회한다.
 	var query = User.findOne({"personal_info.email":req.params.email}, function(err, user){
-		if (err) {
-                	logger.error(req, "유저정보 조회시 오류 - " + err);
-                        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+                logger.info(req, 'Try to find all users - finish');
+		if(err) {
+			logger.error(req, err);
+			return res.status(500).send(""+err);
 		} else if(user==null) {
-			logger.error(req, "해당 유저정보 미존재");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No email found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		} else if(user.personal_info.lng==null || user.personal_info.lat==null) {
-			logger.error(req, "GPS 정보 미존재");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No GPS Infomation found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		}
 
 		var options = {
@@ -135,8 +129,8 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 		};
 
 		if (user.sitter_info==undefined || user.parent_info==undefined) {
-			logger.error(req, "조회 대상 데이터(부모/시터정보)가 존재하지 않습니다.");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No Commute type value found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 
 		}
 
@@ -154,6 +148,8 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 		// 레디스 조회대상 집합군 정의
 		var people = geo.addSet(util.getRedisStr(user, (secondSearch==null)?"MATCH1":"MATCH2"));
 
+logger.info(req, 'Gubun Value : ', searchGubunStr + "_" + searchCommuteStr);
+
 		// 조회 한계거리 설정 : 출퇴근 경우는 baseDistance값을, 입주일 경우엔 한국전체를 거리로 설정
 		var distance = (searchCommuteStr=="commute")?baseDistance:1000;
 
@@ -162,24 +158,24 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 				distance, options, function(err, people){
 
 			if(err) {
-				logger.error(req, "레디스를 통한 주위 시터/부모 조회중 오류 - " + err)
-				redisc.quit();
-                        	return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+				logger.error(req, err)
+                        	return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 			} else {
-				logger.info(req, "레디스를 통한 주위 시터/부모 조회 성공")
 				var keys = Object.keys(people.locationSet);
 //				var list = Object.values(people.locationSet);
-				redisc.quit();
+
+				logger.info(req, 'people list:', keys.length);
+//				logger.info(req, 'people list:', people.locationSet.gettest4429@test.com]);
+//				logger.info(req, 'people list:', list);
 
 				query = User.find({"personal_info.email":{"$in":keys}}, function(err, users){
 					if(err) {
-						logger.error(req, "조회된 시터/부모 사용자 정보 조회중 오류 - " + err)
-                        			return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+						logger.error(req, err)
+                        			return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 					} else if(users==null) {
 						logger.error(req, custMsg.getMsg("NOT_FOUND"));
-                        			return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+                        			return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 					} else {
-						logger.info(req, "조회된 시터/부모 사용자 정보 조회 성공")
 //						logger.info(req, 'people nearby:', users+"");
 						var sort = (req.params.sort==null)?"point":req.params.sort;
 
@@ -198,12 +194,13 @@ getMatchingListByEmail = function(listCnt, req, res, secondSearch, result_one){
 // user : 조회사용자, users : 가까운 시터목록, listCnt : 조회갯수, objDistance : email,distance 객체, sortGubun : 정렬기준
 var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searchGubunStr, myCommuteStr, searchCommuteStr, sortGubun, req, res, secondSearch, result_one) {
 
-	logger.info(req, "[매칭작업] 조회주체 ["+myGubunStr+"]["+myCommuteStr+"], 조회대상 ["+searchGubunStr+"]["+searchCommuteStr+"] " + users.length + " 명");
+	logger.info(req, "[MATCHING CASE] Searching from ["+myGubunStr+"]");
+	logger.info(req, "[MATCHING CASE] Searching for ["+searchGubunStr+"], From ["+myCommuteStr+"] to ["+searchCommuteStr+"]");
 
 	// 출퇴근 유형 값이 없는 경우 에러
 	if(myCommuteStr==undefined) {
-		logger.error(req, "출퇴근 유형 값이 없는 경우 매칭 불가");
-		return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+		logger.error(req, 'Matching is not possible...');
+		return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 	}
 
 	var result = [];
@@ -228,13 +225,18 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 
 	sortGubun = (sortGubun==null)?"point":sortGubun;
 
+	logger.info(req, 'people number:', users.length);
+//	logger.info(req, 'thisYear:', thisYear);
+//	logger.info(req, 'thisDate:', thisDate);
+
 	var favoriteList = [];
 
 	var query = Favorite.find({"email":req.params.email}, function(err, favorites){
+		logger.info(req, 'Try to find all users - finish');
 		if(err) {
-			logger.error(req, "관심 시터/부모 조회중 오류 - " + err);
+			logger.error(req, err);
 		} else if(favorites==null) {
-			logger.info(req, "관심 시터/부모 미존재");
+			logger.error(req, 'No favorite list found...');
 		} else {
                         for (var i=0; i<favorites.length; i++) {
                         	favoriteList.push(favorites[i].favorite_email);
@@ -258,8 +260,8 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 				email:users[i].personal_info.email,
 				name:users[i].personal_info.name,
 				img:(users[i].image_info.prf_img_url==undefined)?
-					"images/prf/nisclan1480031777958@hotmail.com.jpg":
-					users[i].image_info.prf_img_url,
+					"https://siso4u.net/images/prf/nisclan1480031777958@hotmail.com.jpg":
+					"https://siso4u.net/images/"+(users[i].image_info.prf_img_url).substring((users[i].image_info.prf_img_url).indexOf("prf")),
 				age:0,
 				brief:eval("users[i]."+searchGubunStr+"_info.brief"),
 				addr:users[i].personal_info.addr1,
@@ -275,12 +277,23 @@ var getMatchList = function(user, users, listCnt, objDistance, myGubunStr, searc
 				salaryPoint:0,
 				point:0
 			};
-
+/*
+		var currentUser = {
+			email:users[i].personal_info.email,
+			name:users[i].personal_info.name,
+			addr:users[i].personal_info.addr1,
+			age:0,
+			timeMatch:0,
+			distance:0,
+			distPoint:0,
+			salary:users[i].parent_info.salary,
+			point:0
+		};
+*/
 			var age = thisYear - Math.floor(users[i].personal_info.birth_date/10000);
 			if (thisDate<users[i].personal_info.birth_date%1000) age--;
 			currentUser.age = age;
 
-			// 관심 등록된 유저인지 체크
 			for (var y=0;y<favoriteList.length;y++) {
 				if (currentUser.email==favoriteList[y]) {
 					currentUser.favorite = "Y";
@@ -323,6 +336,8 @@ logger.info(req, 'targetCnt:', targetCnt);
 			}
 
 //////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////
 //              2. 거리 점수 판정                           //
 //////////////////////////////////////////////////////////////
 
@@ -336,6 +351,8 @@ logger.info(req, 'targetCnt:', targetCnt);
 						break;
 					}
 			}
+
+//////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////
 //              3. 급여 점수 판정                           //
@@ -358,6 +375,13 @@ logger.info(req, 'targetCnt:', targetCnt);
 						currentUser.point += currentUser.salaryPoint * salaryRate;
 						break;
 					}
+/*
+					if (salaryGap < salTable[y]) {
+						currentUser.salaryPoint = salValue[y-1] - (((salaryGap-salTable[y-1])/(salTable[y]-salTable[y-1]))*(salValue[y-1]-salValue[y]));
+						currentUser.point += currentUser.salaryPoint * salaryRate;
+						break;
+					}
+*/
 			}
 
 //////////////////////////////////////////////////////////////
@@ -367,7 +391,7 @@ logger.info(req, 'targetCnt:', targetCnt);
 		}
 
 
-		// 조회 대상 카운트보다 적을 경우 다른 출퇴근 유형도 조회
+		// Sort before sending list to the client
 		if ( secondSearch == null ) {
 			if (result.length < listCnt) 
 				getMatchingListByEmail(listCnt-result.length, req, res, "true", sortList(result, sortGubun, result.length));
@@ -375,6 +399,11 @@ logger.info(req, 'targetCnt:', targetCnt);
 				return res.status(200).json({group_first:sortList(result, sortGubun, listCnt)});
 			}
 		} else {
+/*
+			var result_obj = [result_one, sortList(result, sortGubun, listCnt)];
+			return res.status(200).json(result_obj);
+*/
+//			return res.status(200).json(new Array(result_one, sortList(result, sortGubun, listCnt)));
 			return res.status(200).json({group_first:result_one, group_second:sortList(result, sortGubun, listCnt)});
 		}
 	});
@@ -396,23 +425,16 @@ exports.getParentCountBySitterEmail = function(req, res){
 // gubun : 시터/부모 구분, distance : 최대거리제한
 getCountByEmail = function(distance, req, res){
 
-        logger.info(req, "[근처 시터/부모 숫자]");
-
-        if (req.params.email==null || req.params.email==undefined || req.params.email=="") {
-                logger.error(req, JSON.stringify(custMsg.getMsg("INVALID_INPUT")));
-                return res.status(500).json(custMsg.getMsg("INVALID_INPUT"));
-        }
-
 	var resultCnt = 0;
+
+	logger.info(req, 'Try to find a certain users within the given distance - start');
 
 	// For GPS calculation
         var redis = require('redis');                                   //add for Redis support
         var redisc = redis.createClient(6379, '127.0.0.1');                     //connect to Redis
 
         redisc.on('error', function(err) {
-                logger.error(req, "레디스 오류 - " + err);
-		redisc.quit();
-		return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+                logger.error(req, 'Error ' + err);
         });
 
         var geo = require('georedis').initialize(redisc, {nativeGeo: true});
@@ -421,15 +443,15 @@ getCountByEmail = function(distance, req, res){
 
 //		logger.info(req, 'Try to find user for counting people nearby : ' + req.params.email);
 
-		if (err) {
-                	logger.error(req, "유저정보 조회시 오류 - " + err);
-                        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+		if(err) {
+			logger.error(req, err);
+			return res.status(500).send(""+err);
 		} else if(user==null) {
-			logger.error(req, "해당 유저정보 미존재");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'Count by email : No email found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		} else if(user.personal_info.lng==null || user.personal_info.lat==null) {
-			logger.error(req, "GPS 정보 미존재");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No GPS Infomation found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		}
 
 		var options = {
@@ -441,20 +463,20 @@ getCountByEmail = function(distance, req, res){
 		    accurate: true // Useful if in emulated mode and accuracy is important, default false
 		};
 
-		logger.info(req, "GPS 위치 : " + user.personal_info.lat + ", " + user.personal_info.lng);
+		logger.info(req, "GPS Position : " + user.personal_info.lat + ", " + user.personal_info.lng);
 
 		// 1. 출퇴근/재택 유형 숫자 카운트
 		var people = geo.addSet(util.getTypeStr(user,"OPPOSITE")+"_commute");
 
 		people.nearby( { latitude: user.personal_info.lat, longitude: user.personal_info.lng}, 
 				distance, options, function(err, people){
-			if (err) {
-				logger.error(req, "레디스 조회시 오류 - " + err)
-				redisc.quit();
-				return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+			if(err) {
+				logger.error(req, err)
+				return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 			} else {
 				var keys = Object.keys(people.locationSet);
-				logger.info(req, util.getTypeStr(user,"OPPOSITE")+"_commute count : " + keys.length);
+//				logger.info(req, 'people nearby:', keys);
+				logger.info(req, "people count:" + keys.length);
 				resultCnt += keys.length;
 
 				// 2. 입주형 유형 숫자 카운트
@@ -462,22 +484,20 @@ getCountByEmail = function(distance, req, res){
 
 				people.nearby( { latitude: user.personal_info.lat, longitude: user.personal_info.lng}, 
 						distance, options, function(err, people){
-					if (err) {
-						logger.error(req, "레디스 조회시 오류 - " + err)
-						redisc.quit();
-					        return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+					if(err) {
+						logger.error(req, err)
+					        return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 					} else {
 						keys = Object.keys(people.locationSet);
-						redisc.quit();
-						logger.info(req, util.getTypeStr(user,"OPPOSITE")+"_resident count : " + keys.length);
+			//			logger.info(req, 'people nearby:', keys);
+						logger.info(req, "people count:" + keys.length);
 						resultCnt += keys.length;
-						logger.info(req, "조회된 시터/부모 숫자 : " + resultCnt);
 
 		                        	return res.status(200).json({count:resultCnt});
 					}
 				});
 			}
-		});
+		})
 	});
 }
 
@@ -510,14 +530,7 @@ exports.getRcvListBySitterEmail = function(req, res){
 
 getListByEmail = function(listGubun, req, res){
 
-	var logStr = (listGubun=="fav")?"관심":(listGubun=="req")?"연락처 요청":"요청 수신";
-
-        logger.info(req, "[" + logStr + " 시터/부모 리스트 조회]");
-
-        if (req.params.email==null || req.params.email==undefined || req.params.email=="") {
-                logger.error(req, JSON.stringify(custMsg.getMsg("INVALID_INPUT")));
-                return res.status(500).json(custMsg.getMsg("INVALID_INPUT"));
-        }
+	logger.info(req, 'Search List...');
 
 /*
 	// For GPS calculation
@@ -532,35 +545,34 @@ getListByEmail = function(listGubun, req, res){
 */
 
 	var query = User.findOne({"personal_info.email":req.params.email}, function(err, user){
+                logger.info(req, 'Try to find all users - finish');
 		if(err) {
-			logger.error(req, logStr + " 시터/부모 리스트 조회를 위해 사용자 정보 조회중 오류 - " + err);
-			return res.status(500).json(""+err);
+			logger.error(req, err);
+			return res.status(500).send(""+err);
 		} else if(user==null) {
-			logger.error(req, "조회요청 유저 정보가 없습니다");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No email found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		} else if(user.personal_info.lng==null || user.personal_info.lat==null) {
-			logger.error(req, "조회요청 유저 GPS 정보가 없습니다");
-                        return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+			logger.error(req, 'No GPS Infomation found...');
+                        return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 		}
 
-		logger.info(req, logStr + " 시터/부모 리스트 조회를 위해 사용자 정보 조회 완료");
 
 					
 //		var people = geo.addSet(searchGubunStr+"_"+searchCommuteStr);
 
 		var destCollection = (listGubun=="fav")?Favorite:Contact;
-		var queryCondition = (listGubun=="fav")?{"email":req.params.email}:((listGubun=="req")?{"req_email":req.params.email, "req_list_yn":"Y"}:{"rcv_email":req.params.email, "rcv_list_yn":"Y"});
+		var queryCondition = (listGubun=="fav")?{"email":req.params.email}:((listGubun=="req")?{"req_email":req.params.email}:{"rcv_email":req.params.email});
 
 		query = destCollection.find(queryCondition, function(err, result){
+	                logger.info(req, 'Try to find all users - finish');
 			if(err) {
-				logger.error(req, logStr + " 시터/부모 리스트 조회중 오류 - " + err);
-	       	                return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+				logger.error(req, err);
+	       	                return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 			} else if(result==null) {
-				logger.error(req, logStr + " 시터/부모 리스트가 존재하지 않습니다.");
-	       	                return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+				logger.error(req, 'No favorite list found...');
+	       	                return res.status(500).send(custMsg.getMsg("NO_FAVORITE"));
 			} 
-
-			logger.info(req, logStr + " 시터/부모 리스트 조회 완료");
 
 			var listEmail = new Array();
 
@@ -573,53 +585,47 @@ getListByEmail = function(listGubun, req, res){
 					listEmail.push(result[i].req_email);
 			}
 
-/*
 			logger.info(req, "listEmail="+listEmail);
 			logger.info(req, "result="+result);
 			logger.info(req, "result.req_email="+result.req_email);
-			logger.info(req, 'Gubun Value : ', searchGubunStr + "_" + searchCommuteStr);
-*/
+//logger.info(req, 'Gubun Value : ', searchGubunStr + "_" + searchCommuteStr);
 
 			query = User.find({"personal_info.email":{"$in":listEmail}}, function(err, users){
 				if(err) {
-					logger.error(req, logStr + " 시터/부모 리스트의 유저정보 조회중 오류 - " + err);
-                        		return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+					logger.error(req, err)
+                        		return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 				} else if(users==null) {
-					logger.error(req, logStr + " 시터/부모 리스트의 유저정보 조회가 불가합니다.");
-                        		return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
+					logger.error(req, custMsg.getMsg("NOT_FOUND"));
+                        		return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
 				} else {
 //					logger.info(req, 'people nearby:', users+"");
-					logger.info(req, logStr + " 시터/부모 리스트의 유저정보 조회 완료");
 					var sort = (req.params.sort==null)?"point":req.params.sort;
 
 					if (listGubun=="fav") {
 
                                                 query = Contact.find({$or:[{"req_email":{"$in":listEmail},"rcv_email":user.personal_info.email}, {"rcv_email":{"$in":listEmail}, "req_email":user.personal_info.email}], "status":{"$in":[0,1]}}, function(err, contacts){
+                                                        logger.info(req, 'Try to find all users - finish');
                                                         if(err) {
-                                                                logger.error(req, "연락처 요청/수신 정보 조회중 오류 - " + err);
-                                                                return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+                                                                logger.error(req, err);
+                                                                return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
                                                         } else if(contacts==null) {
-                                                                logger.info(req, "연락처 요청/수신 정보가 없습니다.");
+                                                                logger.info(req, 'No contacts list found...');
 								contacts = [];
                                                         }
-
-							logger.info(req, "연락처 요청/수신 정보 조회 완료");
 
                                                         makeUserList(listGubun, req, res, user, users, result, contacts);
                                                 });
 					} else {
 
 						query = Favorite.find({"email":req.params.email}, function(err, favorites){
-
+					                logger.info(req, 'Try to find all users - finish');
 							if(err) {
-                                                                logger.error(req, "관심 시터/부모 정보 조회중 오류 - " + err);
-					       	                return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
+								logger.error(req, err);
+					       	                return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
 							} else if(favorites==null) {
-								logger.info(req, "관심 시터/부모 정보가 없습니다.");
+								logger.error(req, 'No favorite list found...');
 								favorites = [];
 							} 
-
-							logger.info(req, "관심 시터/부모 정보 조회 완료");
 
 							makeUserList(listGubun, req, res, user, users, result, favorites);
 						});
@@ -644,30 +650,25 @@ var makeUserList = function(listGubun, req, res, user, users, result, subResult)
 	var thisYear = today.getFullYear();
 	var thisDate = (today.getMonth()+1)*100+today.getDate();
 
-	var email, age;
+	logger.info(req, 'people number:', users.length);
 
 	// 결과 리스트 작성
-	for (var i=0;i<result.length;i++) {
-
-		if (listGubun=="fav")
-			email = result[i].favorite_email;
-		else if (listGubun=="req")
-			email = result[i].rcv_email;
-		else if (listGubun=="rcv")
-			email = result[i].req_email;
+	for (var i=0;i<users.length;i++) {
 
 		// 리스트 객체 생성
 		var currentUser = {
-			email:email,
-			name:"",
-                        img:"",
+			email:users[i].personal_info.email,
+			name:users[i].personal_info.name,
+                        img:(users[i].image_info.prf_img_url==undefined)?
+                        	"http://siso4u.net/images/prf/nisclan1480031777958@hotmail.com.jpg":
+                        	users[i].image_info.prf_img_url,
 			age:0,
-			brief:"",
-			addr:"",
-			salary:"",
-			commute:"",
-			children:"",
-			testimonialCnt:"",
+			brief:eval("users[i]."+searchGubunStr+"_info.brief"),
+			addr:users[i].personal_info.addr1,
+			salary:eval("users[i]."+searchGubunStr+"_info.salary"),
+			commute:eval("users[i]."+searchGubunStr+"_info.commute_type"),
+			children:eval("users[i]."+searchGubunStr+"_info.children_info"),
+			testimonialCnt:users[i].personal_info.testimonial_count,
 			favorite:"N",
 			favRegDate:"",
 			reqEmail:"",
@@ -681,32 +682,17 @@ var makeUserList = function(listGubun, req, res, user, users, result, subResult)
 			distance:0
 		};
 
-		for (var j=0;j<users.length;j++) {
-			if (users[j].personal_info.email==currentUser.email) {
-				currentUser.name = users[j].personal_info.name;
-				currentUser.img = (users[j].image_info.prf_img_url==undefined)?
-					"images/prf/nisclan1480031777958@hotmail.com.jpg":
-					users[j].image_info.prf_img_url,
-				currentUser.brief = eval("users[j]."+searchGubunStr+"_info.brief");
-				currentUser.addr = users[j].personal_info.addr1;
-				currentUser.salary = eval("users[j]."+searchGubunStr+"_info.salary");
-				currentUser.commute = eval("users[j]."+searchGubunStr+"_info.commute_type");
-				currentUser.children = eval("users[j]."+searchGubunStr+"_info.children_info");
-				currentUser.testimonialCnt = users[j].personal_info.testimonial_count;
-
-				age = thisYear - Math.floor(users[j].personal_info.birth_date/10000);
-				if (thisDate<users[j].personal_info.birth_date%1000) age--;
-				currentUser.age = age;
-				currentUser.distance = getDistance(user.personal_info.lat, user.personal_info.lng, users[j].personal_info.lat, users[j].personal_info.lng);
-
-				break;
-			}
-		}
-
 		// 관심등록 리스트
 		if (listGubun=="fav") {
 			currentUser.favorite = "Y";
-			currentUser.favRegDate = (result[i].sys_reg_date==null)?"":result[i].sys_reg_date.getTime();
+
+			for (var j=0;j<result.length;j++) {
+				if (result[j].favorite_email==currentUser.email) {
+					currentUser.favRegDate = (result[j].sys_reg_date==null)?"":result[j].sys_reg_date.getTime();
+//					currentUser.favSysRegDate = (result[j].sys_reg_date==null)?"":result[j].sys_reg_date;
+					break;
+				}
+			}
 
 			// subResult = 연락처요청 리스트
 			for (var j=0;j<subResult.length;j++)
@@ -725,14 +711,21 @@ var makeUserList = function(listGubun, req, res, user, users, result, subResult)
 				}
 		// 연락처 요청/수신 리스트
 		} else {
-			currentUser.contactStatus = result[i].status;
-			currentUser.reqDate = (result[i].sys_req_date==null)?"":result[i].sys_req_date.getTime();
-			currentUser.cancelDate = (result[i].sys_cancel_date==null)?"":result[i].sys_cancel_date.getTime();
-			currentUser.readDate = (result[i].sys_read_date==null)?"":result[i].sys_read_date.getTime();
-			currentUser.answDate = (result[i].sys_answ_date==null)?"":result[i].sys_answ_date.getTime();
-			currentUser.reqEmail = result[i].req_email;
-			currentUser.rcvEmail = result[i].rcv_email;
-			currentUser.contactId = result[i]._id;
+			for (var j=0;j<result.length;j++) {
+				if (result[j].req_email==currentUser.email
+					|| result[j].rcv_email==currentUser.email) {
+
+					currentUser.contactStatus = result[j].status;
+					currentUser.reqDate = (result[j].sys_req_date==null)?"":result[j].sys_req_date.getTime();
+					currentUser.cancelDate = (result[j].sys_cancel_date==null)?"":result[j].sys_cancel_date.getTime();
+					currentUser.readDate = (result[j].sys_read_date==null)?"":result[j].sys_read_date.getTime();
+					currentUser.answDate = (result[j].sys_answ_date==null)?"":result[j].sys_answ_date.getTime();
+					currentUser.reqEmail = result[j].req_email;
+					currentUser.rcvEmail = result[j].rcv_email;
+					currentUser.contactId = result[j]._id;
+					break;
+				}
+			}
 
 			// subResult = 관심등록 리스트
 			for (var j=0;j<subResult.length;j++) {
@@ -744,14 +737,16 @@ var makeUserList = function(listGubun, req, res, user, users, result, subResult)
 			}
 		}
 
+		var age = thisYear - Math.floor(users[i].personal_info.birth_date/10000);
+		if (thisDate<users[i].personal_info.birth_date%1000) age--;
+		currentUser.age = age;
+
+		currentUser.distance = getDistance(user.personal_info.lat, user.personal_info.lng, users[i].personal_info.lat, users[i].personal_info.lng);
+
 		userList.push(currentUser);
 	}
 
 	var sortGubun = (req.params.sort==null)?listGubun:req.params.sort;
-
-	var logStr = (listGubun=="fav")?"관심":(listGubun=="req")?"연락처 요청":"요청 수신";
-
-        logger.info(req, logStr + " 시터/부모 리스트 조회가 완료되었습니다.");
 
 	// Sort before sending list to the client
 	return res.status(200).json({group_first:sortList(userList, sortGubun, userList.length)});

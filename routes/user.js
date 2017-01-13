@@ -7,7 +7,7 @@ var custMsg = require( '../models/custom_msg' );
 
 module.exports = function(passport){
 
-	//Log in
+	// 로그인
 	router.post('/login', function(req, res, next) {
 		userController.loginUser(req, res, passport, next);
 	});
@@ -22,7 +22,7 @@ module.exports = function(passport){
 		userController.logoutUser(req, res);
 	});
 
-	//Sign up
+	// 회원가입
 	router.post('/', function(req, res, next) {
 		userController.signupUser(req, res, passport, next);
 	});
@@ -32,7 +32,7 @@ module.exports = function(passport){
 		userController.updateUserStatus(req, res);
 	});
 
-	// Check if the same email exists
+	// 가입을 위한 이메일 중복 체크
 	router.get('/checkUser/:email', function(req, res){
 		userController.checkUserByEmail(req, res);
 	});
@@ -63,7 +63,7 @@ module.exports = function(passport){
 	});
 
 	//gets specified user by email
-	router.get('/:email', authController.isAuthenticated, function(req, res){
+	router.get('/detail/:email', authController.isAuthenticated, function(req, res){
 		userController.getUserByEmail(req, res);
 	}) 
 
@@ -73,7 +73,7 @@ module.exports = function(passport){
 	})
 
 	//deletes the user by email
-	router.delete('/', authController.isAuthenticated, function(req, res){
+	router.delete('/:email', authController.isAuthenticated, function(req, res){
 		userController.removeUserByEmail(req, res);
 	});
 

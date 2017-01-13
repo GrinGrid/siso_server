@@ -52,13 +52,13 @@ module.exports = function(passport){
 				//User and password both match, return user from done method
 				//which will be treated like success
 
-				var query = User.findOneAndUpdate({"personal_info.email":username}, {$set:{"sys_info.sysLastLogin":Date.now()}}, {upsert:false, new:true}, function(err, raw){
+				var query = User.findOneAndUpdate({"personal_info.email":username}, {$set:{"sys_info.sys_last_login":Date.now(), "sys_info.sys_pool_insert_date":Date.now()}}, {upsert:true, new:true}, function(err, raw){
 					if(err) {
 						logger.error(req, err);
-						return res.status(500).send(custMsg.getMsg("SYS_ERROR"));
+						return res.status(500).json(custMsg.getMsg("SYS_ERROR"));
 					} else if(raw==null) {
 						logger.error(req, "해당 이메일 없음(마지막 로그인 업데이트중 오류) : "+username);
-						return res.status(500).send(custMsg.getMsg("NOT_FOUND"));
+						return res.status(500).json(custMsg.getMsg("NOT_FOUND"));
 					}
 
 					logger.info(req, "마지막 로그인 일시 업데이트 성공 : "+username);

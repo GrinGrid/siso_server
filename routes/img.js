@@ -8,14 +8,13 @@ var authController = require('../controllers/controller_auth.js');
 var fileController = require('../controllers/controller_file.js');
 var custMsg = require( '../models/custom_msg' );
 
-var logger = require('../lib/wlogger');
-
 //upload an image
+//router.post('/', multipartMiddleware, function(req, res){
 router.post('/', authController.isAuthenticated, multipartMiddleware, function(req, res){
-	logger.info('Uploading an image of user : ' + req.body.email);
 	fileController.uploadImage(req, res);
 });
 
+/*
 //updates an image
 router.put('/', authController.isAuthenticated, function(req, res){
 	fileController.replaceImage(req, res);
@@ -25,10 +24,9 @@ router.put('/', authController.isAuthenticated, function(req, res){
 router.delete('/', authController.isAuthenticated, function(req, res){
 	fileController.removeImage(req, res);
 });
+*/
 
-
-
-router.get('/', authController.isAuthenticated, function(req, res){
+router.get('/', function(req, res){
   res.writeHead(200, {'content-type': 'text/html'});
   res.end(
     '<form action="/img" enctype="multipart/form-data" method="post">'+

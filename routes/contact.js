@@ -27,8 +27,8 @@ router.post('/reject', authController.isAuthenticated, function(req, res){
 		contactController.rejectRequestedContact(req, res);
 	}) 
 
-router.delete('/', authController.isAuthenticated, function(req, res){
-		contactController.removeContact(req, res);
+router.post('/delete', authController.isAuthenticated, function(req, res){
+		contactController.deleteContact(req, res);
 	}) 
 
 module.exports = router;

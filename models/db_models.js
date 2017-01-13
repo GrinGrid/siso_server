@@ -5,7 +5,7 @@ var userSchema = new mongoose.Schema({
 		sys_status: String, // active, modify, remove
 		sys_last_login: Date,
 		sys_reg_date: Date,
-		sys_pool_expire_date: Date
+		sys_pool_insert_date: Date
 	},
 	personal_info: {
 		email: String,
@@ -138,13 +138,18 @@ var contactSchema = new mongoose.Schema({
 	req_email: String,
 	rcv_email: String,
 	req_msg: String,
-	rcv_msg: String,
+	cancel_msg: String,
+	answ_msg: String,
 	req_date: {type:String, default:""},
-	rcv_date: {type:String, default:""},
-	last_update: {type:String, default:""},
+	cancel_date: {type:String, default:""},
+	read_date: {type:String, default:""},
+	answ_date: {type:String, default:""},
+	req_list_yn: {type:String, default:"Y"},
+	rcv_list_yn: {type:String, default:"Y"},
 	sys_req_date: Date,
-	sys_rcv_date: Date,
-	sys_last_update: Date,
+	sys_cancel_date: Date,
+	sys_read_date: Date,
+	sys_answ_date: Date,
 	status: Number
 });
 
@@ -154,7 +159,7 @@ var pushSchema = new mongoose.Schema({
 	type: String,
 	msg: String,
 	is_send_success: String,
-	is_read: String,
+	is_read: {type:String, default:"N"},
 	is_confirm: String,
 	req_date: String,
 	read_date: String,

@@ -88,6 +88,8 @@ app.use(session({
   secret: 'keyboard cat'
 }));
 */
+var date = new Date();
+console.log("############### Node.js restarted at "+date.toLocaleTimeString()+" "+date.toLocaleDateString()+" #################");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
