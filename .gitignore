@@ -4,6 +4,7 @@ conf
 logs
 src_backup
 node_modules
-public/images/prf
+public
+web/images
 *.tar
 
